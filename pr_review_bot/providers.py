@@ -19,7 +19,7 @@ class Provider:
     display_name: str
     env_var: str
     base_url: str
-    default_model: str
+    default_model: str | None  # None = user must supply --model
     model_examples: tuple[str, ...]
 
     @property
@@ -65,11 +65,14 @@ PROVIDERS: dict[str, Provider] = {
         display_name="OpenRouter",
         env_var="OPENROUTER_API_KEY",
         base_url="https://openrouter.ai/api/v1",
-        default_model="google/gemini-2.0-flash-001",
+        default_model=None,  # OpenRouter routes to many models — user must choose
         model_examples=(
             "google/gemini-2.0-flash-001",
-            "anthropic/claude-3-5-sonnet",
+            "google/gemini-2.5-pro-preview",
+            "anthropic/claude-sonnet-4-5",
+            "anthropic/claude-3-5-haiku",
             "meta-llama/llama-3.3-70b-instruct",
+            "mistralai/mistral-small-3.2-24b-instruct:free",
         ),
     ),
 }

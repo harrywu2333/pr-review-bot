@@ -44,10 +44,15 @@ inputs:
     description: >
       LLM model to use.
       Defaults to the provider's default model when omitted.
+      REQUIRED for OpenRouter — there is no default, you must pick a model.
       Examples:
-        gemini-2.0-flash              – Google Gemini (default for gemini provider)
-        llama-3.3-70b-versatile       – Groq (default for groq provider)
-        google/gemini-2.0-flash-001   – OpenRouter (default for openrouter provider)
+        gemini-2.0-flash                          – Gemini (default)
+        llama-3.3-70b-versatile                   – Groq (default)
+        google/gemini-2.0-flash-001               – OpenRouter
+        anthropic/claude-sonnet-4-5               – OpenRouter
+        meta-llama/llama-3.3-70b-instruct         – OpenRouter
+        mistralai/mistral-small-3.2-24b-instruct:free  – OpenRouter (free tier)
+      Browse all OpenRouter models at https://openrouter.ai/models
     required: false
     default: ""
 

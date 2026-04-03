@@ -21,9 +21,11 @@ An automated pull-request code reviewer powered by [Google Gemini](https://aistu
 |---|---|---|---|
 | Google Gemini | `GEMINI_API_KEY` | `gemini-2.0-flash` | https://aistudio.google.com/ |
 | Groq | `GROQ_API_KEY` | `llama-3.3-70b-versatile` | https://console.groq.com/ |
-| OpenRouter | `OPENROUTER_API_KEY` | `google/gemini-2.0-flash-001` | https://openrouter.ai/ |
+| OpenRouter | `OPENROUTER_API_KEY` | **required — see below** | https://openrouter.ai/ |
 
 Set **exactly one** key and the provider is detected automatically. If you have multiple keys, pass `--provider` to choose.
+
+> **OpenRouter:** Because OpenRouter routes to hundreds of different models, there is no built-in default. You must always pass `--model` when using it — e.g. `--model google/gemini-2.0-flash-001`. Browse the full catalogue at <https://openrouter.ai/models>.
 
 ---
 
@@ -33,15 +35,52 @@ Set **exactly one** key and the provider is detected automatically. If you have 
 pip install -r requirements.txt
 # — or install as a CLI tool —
 pip install .
+```
 
-# Set exactly ONE of these (auto-detects provider):
-export GEMINI_API_KEY=...
-# export GROQ_API_KEY=...
-# export OPENROUTER_API_KEY=...
+**Option A — `.env` file (recommended for local use)**
 
+```bash
+cp /path/to/pr-review-bot/.env.example .env
+# Edit .env and uncomment the key for your chosen provider
+```
+
+```ini
+# .env
+GROQ_API_KEY=gsk_...
+```
+
+**Option B — export directly in your shell**
+
+```bash
+export GROQ_API_KEY=gsk_...
+```
+
+Then run the bot from inside the repo you want to review:
+
+```bash
 cd /path/to/your-project
 python /path/to/pr-review-bot/review.py
 ```
+
+---
+
+## .env File Support
+
+The bot automatically loads a `.env` file from your **current working directory** on every run, so you never have to `export` keys in your shell manually.
+
+```bash
+# One-time setup inside your project
+cp /path/to/pr-review-bot/.env.example .env
+# Uncomment and fill in one key:
+#   GEMINI_API_KEY=AIza...
+#   GROQ_API_KEY=gsk_...
+#   OPENROUTER_API_KEY=sk-or-...
+```
+
+Rules:
+- **Shell env vars always win** — `.env` values are only applied when the variable is not already set in the environment.
+- **`.env` is in `.gitignore`** — it will never be accidentally committed.
+- The `.env.example` file (safe to commit) documents every available key.
 
 ---
 
@@ -93,9 +132,12 @@ pr-review --provider groq
 export GEMINI_API_KEY=AIza...
 pr-review --provider gemini --model gemini-2.0-flash
 
-# Use OpenRouter with a custom model
+# Use OpenRouter — --model is required, pick any model from https://openrouter.ai/models
 export OPENROUTER_API_KEY=sk-or-...
+pr-review --provider openrouter --model google/gemini-2.0-flash-001
+pr-review --provider openrouter --model anthropic/claude-sonnet-4-5
 pr-review --provider openrouter --model meta-llama/llama-3.3-70b-instruct
+pr-review --provider openrouter --model "mistralai/mistral-small-3.2-24b-instruct:free"
 
 # Review against a different base branch
 pr-review --base develop
@@ -196,6 +238,7 @@ pr-review-bot/
 │       └── pr-review.yml     # Copy this into your target repo
 ├── action.yml                # GitHub composite action entry-point
 ├── review.py                 # Standalone CLI entry-point
+├── .env.example              # Copy to .env and fill in your API key
 ├── pyproject.toml
 ├── requirements.txt
 └── README.md
@@ -207,6 +250,7 @@ pr-review-bot/
 
 - Python ≥ 3.9
 - `openai` ≥ 1.0.0
+- `python-dotenv` ≥ 1.0.0
 - `git` in `PATH`
 - `gh` CLI (only needed for `--post-comment`)
 

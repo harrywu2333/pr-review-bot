@@ -23,6 +23,15 @@ except ImportError:
     )
     sys.exit(1)
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    print(
+        "❌  The 'python-dotenv' package is not installed.\n    Fix: pip install python-dotenv",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 from .providers import (
     PROVIDER_NAMES,
     PROVIDERS,
@@ -231,6 +240,19 @@ def run_review(
     # 3. Resolve model
     # ------------------------------------------------------------------
     model = model or provider.default_model
+    if not model:
+        examples = "\n".join(
+            f"      pr-review --provider {provider.key} --model {m}"
+            for m in provider.model_examples
+        )
+        print(
+            f"❌  --model is required for {provider.display_name}.\n"
+            f"    {provider.display_name} routes to many models — you must pick one.\n\n"
+            f"    Some popular choices:\n{examples}\n\n"
+            f"    Browse the full catalogue: https://openrouter.ai/models",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # ------------------------------------------------------------------
     # Resolve branch name
@@ -479,6 +501,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    # Load .env file before anything reads environment variables.
+    # Existing shell env vars always take precedence (override=False is the default).
+    load_dotenv()
+
     parser = build_parser()
     args = parser.parse_args()
 
