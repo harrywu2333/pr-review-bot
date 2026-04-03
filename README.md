@@ -21,9 +21,11 @@ An automated pull-request code reviewer powered by [Google Gemini](https://aistu
 |---|---|---|---|
 | Google Gemini | `GEMINI_API_KEY` | `gemini-2.0-flash` | https://aistudio.google.com/ |
 | Groq | `GROQ_API_KEY` | `llama-3.3-70b-versatile` | https://console.groq.com/ |
-| OpenRouter | `OPENROUTER_API_KEY` | `google/gemini-2.0-flash-001` | https://openrouter.ai/ |
+| OpenRouter | `OPENROUTER_API_KEY` | **required — see below** | https://openrouter.ai/ |
 
 Set **exactly one** key and the provider is detected automatically. If you have multiple keys, pass `--provider` to choose.
+
+> **OpenRouter:** Because OpenRouter routes to hundreds of different models, there is no built-in default. You must always pass `--model` when using it — e.g. `--model google/gemini-2.0-flash-001`. Browse the full catalogue at <https://openrouter.ai/models>.
 
 ---
 
@@ -130,9 +132,12 @@ pr-review --provider groq
 export GEMINI_API_KEY=AIza...
 pr-review --provider gemini --model gemini-2.0-flash
 
-# Use OpenRouter with a custom model
+# Use OpenRouter — --model is required, pick any model from https://openrouter.ai/models
 export OPENROUTER_API_KEY=sk-or-...
+pr-review --provider openrouter --model google/gemini-2.0-flash-001
+pr-review --provider openrouter --model anthropic/claude-sonnet-4-5
 pr-review --provider openrouter --model meta-llama/llama-3.3-70b-instruct
+pr-review --provider openrouter --model "mistralai/mistral-small-3.2-24b-instruct:free"
 
 # Review against a different base branch
 pr-review --base develop

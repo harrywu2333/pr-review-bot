@@ -240,6 +240,19 @@ def run_review(
     # 3. Resolve model
     # ------------------------------------------------------------------
     model = model or provider.default_model
+    if not model:
+        examples = "\n".join(
+            f"      pr-review --provider {provider.key} --model {m}"
+            for m in provider.model_examples
+        )
+        print(
+            f"❌  --model is required for {provider.display_name}.\n"
+            f"    {provider.display_name} routes to many models — you must pick one.\n\n"
+            f"    Some popular choices:\n{examples}\n\n"
+            f"    Browse the full catalogue: https://openrouter.ai/models",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # ------------------------------------------------------------------
     # Resolve branch name
