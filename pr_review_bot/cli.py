@@ -23,6 +23,15 @@ except ImportError:
     )
     sys.exit(1)
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    print(
+        "❌  The 'python-dotenv' package is not installed.\n    Fix: pip install python-dotenv",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 from .providers import (
     PROVIDER_NAMES,
     PROVIDERS,
@@ -479,6 +488,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    # Load .env file before anything reads environment variables.
+    # Existing shell env vars always take precedence (override=False is the default).
+    load_dotenv()
+
     parser = build_parser()
     args = parser.parse_args()
 

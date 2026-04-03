@@ -33,15 +33,52 @@ Set **exactly one** key and the provider is detected automatically. If you have 
 pip install -r requirements.txt
 # — or install as a CLI tool —
 pip install .
+```
 
-# Set exactly ONE of these (auto-detects provider):
-export GEMINI_API_KEY=...
-# export GROQ_API_KEY=...
-# export OPENROUTER_API_KEY=...
+**Option A — `.env` file (recommended for local use)**
 
+```bash
+cp /path/to/pr-review-bot/.env.example .env
+# Edit .env and uncomment the key for your chosen provider
+```
+
+```ini
+# .env
+GROQ_API_KEY=gsk_...
+```
+
+**Option B — export directly in your shell**
+
+```bash
+export GROQ_API_KEY=gsk_...
+```
+
+Then run the bot from inside the repo you want to review:
+
+```bash
 cd /path/to/your-project
 python /path/to/pr-review-bot/review.py
 ```
+
+---
+
+## .env File Support
+
+The bot automatically loads a `.env` file from your **current working directory** on every run, so you never have to `export` keys in your shell manually.
+
+```bash
+# One-time setup inside your project
+cp /path/to/pr-review-bot/.env.example .env
+# Uncomment and fill in one key:
+#   GEMINI_API_KEY=AIza...
+#   GROQ_API_KEY=gsk_...
+#   OPENROUTER_API_KEY=sk-or-...
+```
+
+Rules:
+- **Shell env vars always win** — `.env` values are only applied when the variable is not already set in the environment.
+- **`.env` is in `.gitignore`** — it will never be accidentally committed.
+- The `.env.example` file (safe to commit) documents every available key.
 
 ---
 
@@ -196,6 +233,7 @@ pr-review-bot/
 │       └── pr-review.yml     # Copy this into your target repo
 ├── action.yml                # GitHub composite action entry-point
 ├── review.py                 # Standalone CLI entry-point
+├── .env.example              # Copy to .env and fill in your API key
 ├── pyproject.toml
 ├── requirements.txt
 └── README.md
@@ -207,6 +245,7 @@ pr-review-bot/
 
 - Python ≥ 3.9
 - `openai` ≥ 1.0.0
+- `python-dotenv` ≥ 1.0.0
 - `git` in `PATH`
 - `gh` CLI (only needed for `--post-comment`)
 
