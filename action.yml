@@ -1,6 +1,6 @@
 name: PR Review Bot
 description: >
-  Automated pull-request code review powered by Claude.
+  Automated pull-request code review powered by Gemini, Groq, or OpenRouter.
   Posts a structured review comment directly on the PR.
 
 author: Harry Wu
@@ -10,11 +10,28 @@ branding:
   color: purple
 
 inputs:
-  anthropic_api_key:
+  gemini_api_key:
+    description: Google Gemini API key (GEMINI_API_KEY). Obtain at https://aistudio.google.com/
+    required: false
+    default: ""
+
+  groq_api_key:
+    description: Groq API key (GROQ_API_KEY). Obtain at https://console.groq.com/
+    required: false
+    default: ""
+
+  openrouter_api_key:
+    description: OpenRouter API key (OPENROUTER_API_KEY). Obtain at https://openrouter.ai/
+    required: false
+    default: ""
+
+  provider:
     description: >
-      Anthropic API key (store as a repo/org secret and pass via
-      ${{ secrets.ANTHROPIC_API_KEY }}).
-    required: true
+      LLM provider to use: gemini, groq, or openrouter.
+      If omitted, auto-detected from whichever API key is set.
+      Required when more than one API key is provided.
+    required: false
+    default: ""
 
   base_branch:
     description: >
@@ -25,12 +42,14 @@ inputs:
 
   model:
     description: >
-      Claude model to use.
-      Recommended values:
-        claude-sonnet-4-5   – fast, great for most PRs  (default)
-        claude-opus-4-5     – slower, deeper analysis for large/complex PRs
+      LLM model to use.
+      Defaults to the provider's default model when omitted.
+      Examples:
+        gemini-2.0-flash              – Google Gemini (default for gemini provider)
+        llama-3.3-70b-versatile       – Groq (default for groq provider)
+        google/gemini-2.0-flash-001   – OpenRouter (default for openrouter provider)
     required: false
-    default: claude-sonnet-4-5
+    default: ""
 
   pr_number:
     description: >
@@ -55,7 +74,7 @@ inputs:
 
 outputs:
   review:
-    description: The full review text produced by Claude.
+    description: The full review text produced by the LLM.
     value: ${{ steps.run-review.outputs.review }}
 
 runs:
@@ -68,13 +87,15 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: pip install --quiet "anthropic>=0.40.0"
+      run: pip install --quiet "openai>=1.0.0"
 
     - name: Run PR review
       id: run-review
       shell: bash
       env:
-        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+        GROQ_API_KEY: ${{ inputs.groq_api_key }}
+        OPENROUTER_API_KEY: ${{ inputs.openrouter_api_key }}
         GH_TOKEN: ${{ github.token }}
       run: |
         EXTRA_FLAGS=""
@@ -83,11 +104,22 @@ runs:
           EXTRA_FLAGS="--post-comment --pr ${{ inputs.pr_number }} --github-repo ${{ github.repository }}"
         fi
 
+        PROVIDER_FLAG=""
+        if [ -n "${{ inputs.provider }}" ]; then
+          PROVIDER_FLAG="--provider ${{ inputs.provider }}"
+        fi
+
+        MODEL_FLAG=""
+        if [ -n "${{ inputs.model }}" ]; then
+          MODEL_FLAG="--model ${{ inputs.model }}"
+        fi
+
         REVIEW=$(python "${{ github.action_path }}/review.py" \
           --base "${{ inputs.base_branch }}" \
-          --model "${{ inputs.model }}" \
+          $MODEL_FLAG \
           --max-diff-chars "${{ inputs.max_diff_chars }}" \
           --no-stream \
+          $PROVIDER_FLAG \
           $EXTRA_FLAGS)
 
         echo "review<<EOF_REVIEW_DELIMITER" >> "$GITHUB_OUTPUT"
