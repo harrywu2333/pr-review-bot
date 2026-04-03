@@ -1,0 +1,2 @@
+[console_scripts]
+pr-review = pr_review_bot.cli:main

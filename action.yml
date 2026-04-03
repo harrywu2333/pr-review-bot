@@ -1,0 +1,97 @@
+name: PR Review Bot
+description: >
+  Automated pull-request code review powered by Claude.
+  Posts a structured review comment directly on the PR.
+
+author: Harry Wu
+
+branding:
+  icon: code
+  color: purple
+
+inputs:
+  anthropic_api_key:
+    description: >
+      Anthropic API key (store as a repo/org secret and pass via
+      ${{ secrets.ANTHROPIC_API_KEY }}).
+    required: true
+
+  base_branch:
+    description: >
+      Base branch to diff against. Defaults to the PR's base ref when
+      triggered by a pull_request event.
+    required: false
+    default: ${{ github.base_ref }}
+
+  model:
+    description: >
+      Claude model to use.
+      Recommended values:
+        claude-sonnet-4-5   – fast, great for most PRs  (default)
+        claude-opus-4-5     – slower, deeper analysis for large/complex PRs
+    required: false
+    default: claude-sonnet-4-5
+
+  pr_number:
+    description: >
+      PR number to post the review comment on.
+      Populated automatically when triggered by a pull_request event.
+    required: false
+    default: ${{ github.event.pull_request.number }}
+
+  post_comment:
+    description: >
+      Set to "true" to post the review as a PR comment via the gh CLI.
+      Set to "false" to only print the review to the Actions log.
+    required: false
+    default: "true"
+
+  max_diff_chars:
+    description: >
+      Truncate the git diff at this many characters before sending to the
+      model (avoids hitting context-window limits on huge PRs).
+    required: false
+    default: "100000"
+
+outputs:
+  review:
+    description: The full review text produced by Claude.
+    value: ${{ steps.run-review.outputs.review }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      shell: bash
+      run: pip install --quiet "anthropic>=0.40.0"
+
+    - name: Run PR review
+      id: run-review
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        EXTRA_FLAGS=""
+
+        if [ "${{ inputs.post_comment }}" = "true" ] && [ -n "${{ inputs.pr_number }}" ]; then
+          EXTRA_FLAGS="--post-comment --pr ${{ inputs.pr_number }} --github-repo ${{ github.repository }}"
+        fi
+
+        REVIEW=$(python "${{ github.action_path }}/review.py" \
+          --base "${{ inputs.base_branch }}" \
+          --model "${{ inputs.model }}" \
+          --max-diff-chars "${{ inputs.max_diff_chars }}" \
+          --no-stream \
+          $EXTRA_FLAGS)
+
+        echo "review<<EOF_REVIEW_DELIMITER" >> "$GITHUB_OUTPUT"
+        echo "$REVIEW"                      >> "$GITHUB_OUTPUT"
+        echo "EOF_REVIEW_DELIMITER"         >> "$GITHUB_OUTPUT"
+
+        echo "$REVIEW"
