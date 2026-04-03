@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pr-review-bot"
+version = "0.1.0"
+description = "Automated PR code review powered by Gemini, Groq, and OpenRouter"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+keywords = ["code-review", "pull-request", "ai", "gemini", "groq", "openrouter", "llm"]
+dependencies = [
+    "openai>=1.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/harrywu0927/pr-review-bot"
+
+[project.scripts]
+pr-review = "pr_review_bot.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["pr_review_bot*"]
+
+[tool.setuptools.package-data]
+pr_review_bot = ["prompts/*.md"]

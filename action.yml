@@ -1,0 +1,129 @@
+name: PR Review Bot
+description: >
+  Automated pull-request code review powered by Gemini, Groq, or OpenRouter.
+  Posts a structured review comment directly on the PR.
+
+author: Harry Wu
+
+branding:
+  icon: code
+  color: purple
+
+inputs:
+  gemini_api_key:
+    description: Google Gemini API key (GEMINI_API_KEY). Obtain at https://aistudio.google.com/
+    required: false
+    default: ""
+
+  groq_api_key:
+    description: Groq API key (GROQ_API_KEY). Obtain at https://console.groq.com/
+    required: false
+    default: ""
+
+  openrouter_api_key:
+    description: OpenRouter API key (OPENROUTER_API_KEY). Obtain at https://openrouter.ai/
+    required: false
+    default: ""
+
+  provider:
+    description: >
+      LLM provider to use: gemini, groq, or openrouter.
+      If omitted, auto-detected from whichever API key is set.
+      Required when more than one API key is provided.
+    required: false
+    default: ""
+
+  base_branch:
+    description: >
+      Base branch to diff against. Defaults to the PR's base ref when
+      triggered by a pull_request event.
+    required: false
+    default: ${{ github.base_ref }}
+
+  model:
+    description: >
+      LLM model to use.
+      Defaults to the provider's default model when omitted.
+      Examples:
+        gemini-2.0-flash              – Google Gemini (default for gemini provider)
+        llama-3.3-70b-versatile       – Groq (default for groq provider)
+        google/gemini-2.0-flash-001   – OpenRouter (default for openrouter provider)
+    required: false
+    default: ""
+
+  pr_number:
+    description: >
+      PR number to post the review comment on.
+      Populated automatically when triggered by a pull_request event.
+    required: false
+    default: ${{ github.event.pull_request.number }}
+
+  post_comment:
+    description: >
+      Set to "true" to post the review as a PR comment via the gh CLI.
+      Set to "false" to only print the review to the Actions log.
+    required: false
+    default: "true"
+
+  max_diff_chars:
+    description: >
+      Truncate the git diff at this many characters before sending to the
+      model (avoids hitting context-window limits on huge PRs).
+    required: false
+    default: "100000"
+
+outputs:
+  review:
+    description: The full review text produced by the LLM.
+    value: ${{ steps.run-review.outputs.review }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      shell: bash
+      run: pip install --quiet "openai>=1.0.0"
+
+    - name: Run PR review
+      id: run-review
+      shell: bash
+      env:
+        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+        GROQ_API_KEY: ${{ inputs.groq_api_key }}
+        OPENROUTER_API_KEY: ${{ inputs.openrouter_api_key }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        EXTRA_FLAGS=""
+
+        if [ "${{ inputs.post_comment }}" = "true" ] && [ -n "${{ inputs.pr_number }}" ]; then
+          EXTRA_FLAGS="--post-comment --pr ${{ inputs.pr_number }} --github-repo ${{ github.repository }}"
+        fi
+
+        PROVIDER_FLAG=""
+        if [ -n "${{ inputs.provider }}" ]; then
+          PROVIDER_FLAG="--provider ${{ inputs.provider }}"
+        fi
+
+        MODEL_FLAG=""
+        if [ -n "${{ inputs.model }}" ]; then
+          MODEL_FLAG="--model ${{ inputs.model }}"
+        fi
+
+        REVIEW=$(python "${{ github.action_path }}/review.py" \
+          --base "${{ inputs.base_branch }}" \
+          $MODEL_FLAG \
+          --max-diff-chars "${{ inputs.max_diff_chars }}" \
+          --no-stream \
+          $PROVIDER_FLAG \
+          $EXTRA_FLAGS)
+
+        echo "review<<EOF_REVIEW_DELIMITER" >> "$GITHUB_OUTPUT"
+        echo "$REVIEW"                      >> "$GITHUB_OUTPUT"
+        echo "EOF_REVIEW_DELIMITER"         >> "$GITHUB_OUTPUT"
+
+        echo "$REVIEW"

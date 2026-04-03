@@ -1,0 +1,32 @@
+name: PR Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    name: Automated Code Review
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run PR Review Bot
+        uses: your-org/pr-review-bot@main
+        with:
+          # Set whichever API key(s) you have as repo secrets.
+          # The bot auto-detects the provider when exactly one key is set.
+          # Set `provider:` explicitly if you have multiple keys configured.
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          groq_api_key: ${{ secrets.GROQ_API_KEY }}
+          openrouter_api_key: ${{ secrets.OPENROUTER_API_KEY }}
+          # provider: gemini   # uncomment to force a specific provider
+          base_branch: ${{ github.base_ref }}
+          pr_number: ${{ github.event.pull_request.number }}
